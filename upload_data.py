@@ -24,9 +24,15 @@ UPLOAD_PARALLEL = 16
 VECTOR_NAME = f"fast-{EMBEDDING_MODEL.split("/")[-1].lower()}"
 
 
+def get_document(data_point):
+    return data_point["case_title"] + ": " + data_point.get("summary", "")
+
+
 if __name__ == "__main__":
     # --- 1. Initialize Qdrant Client ---
-    qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, prefer_grpc=True, timeout=30)
+    qdrant_client = QdrantClient(
+        url=QDRANT_URL, api_key=QDRANT_API_KEY, prefer_grpc=True, timeout=30
+    )
 
     # --- 2. Recreate Collection ---
     if qdrant_client.collection_exists(collection_name=COLLECTION_NAME):
@@ -36,18 +42,31 @@ if __name__ == "__main__":
 
     # --- 3. Build Points ---
     dataset = load_dataset(DATASET_NAME, split="train")
-    points = [PointStruct(id=i, payload={"document": dataset[i]["case_title"] + ": " + dataset[i].get("summary", ""), "metadata": dataset[i]}, vector={VECTOR_NAME: Document(text=dataset[i]["summary"], model=EMBEDDING_MODEL)}) for i in range(len(dataset))]
+    points = [
+        PointStruct(
+            id=i,
+            payload={"document": get_document(dataset[i]), "metadata": dataset[i]},
+            vector=Document(text=get_document(dataset[i]), model=EMBEDDING_MODEL),
+        )
+        for i in range(len(dataset))
+    ]
 
     # --- 4. Upload Points ---
-    qdrant_client.upload_points(COLLECTION_NAME, points, batch_size=BATCH_SIZE, parallel=UPLOAD_PARALLEL)
+    qdrant_client.upload_points(
+        COLLECTION_NAME, points, batch_size=BATCH_SIZE, parallel=UPLOAD_PARALLEL
+    )
 
     # --- 5. Wait for Collection to be Ready ---
     while qdrant_client.get_collection(COLLECTION_NAME).status != CollectionStatus.GREEN:
         time.sleep(1.0)
 
     # --- 6. Sanity Check: Query the first point ---
-    query_text = dataset[0]["case_title"] + ": " + dataset[0].get("summary", "")
-    results = qdrant_client.query_points(collection_name=COLLECTION_NAME, query=Document(text=query_text, model=EMBEDDING_MODEL), using=VECTOR_NAME)
+    query_text = get_document(dataset[0])
+    results = qdrant_client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=Document(text=query_text, model=EMBEDDING_MODEL),
+        using=VECTOR_NAME,
+    )
     top = results.points[0]
     print(f"Top score: {top.score:.4f} | Result: {top.payload['document'][:100]}")
 
