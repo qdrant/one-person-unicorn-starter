@@ -17,11 +17,13 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 VECTOR_SIZE = os.getenv("VECTOR_SIZE")
 DISTANCE_METRIC = os.getenv("DISTANCE_METRIC")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
-
 DATASET_NAME = "SnehaDeshmukh/IndianBailJudgments-1200"
 BATCH_SIZE = 64
 UPLOAD_PARALLEL = 16
 VECTOR_NAME = f"fast-{EMBEDDING_MODEL.split("/")[-1].lower()}"
+
+
+# --- Helpers ---------------------------------------------------
 
 
 def get_document(data_point):
