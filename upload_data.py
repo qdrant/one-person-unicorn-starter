@@ -48,7 +48,7 @@ if __name__ == "__main__":
         PointStruct(
             id=i,
             payload={"document": get_document(dataset[i]), "metadata": dataset[i]},
-            vector=Document(text=get_document(dataset[i]), model=EMBEDDING_MODEL),
+            vector={VECTOR_NAME: Document(text=get_document(dataset[i]), model=EMBEDDING_MODEL)},
         )
         for i in range(len(dataset))
     ]
@@ -68,6 +68,7 @@ if __name__ == "__main__":
         collection_name=COLLECTION_NAME,
         query=Document(text=query_text, model=EMBEDDING_MODEL),
         using=VECTOR_NAME,
+        limit=1,
     )
     top = results.points[0]
     print(f"Top score: {top.score:.4f} | Result: {top.payload['document'][:100]}")
